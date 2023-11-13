@@ -1,0 +1,91 @@
+import hashlib
+import sqlite3
+import csv
+try:
+    conn = sqlite3.connect('C:\\demo\\healthcare12.db')
+    c = conn.cursor()
+    c.execute('''
+              CREATE TABLE IF NOT EXISTS patients
+              (ID TEXT PRIMARY KEY,
+              age INTEGER,
+              deit TEXT,
+              hash_key TEXT)
+              ''')
+    conn.commit()
+except sqlite3.Error as e:
+    print(f"Error: {e}")
+    exit(1)
+
+class Blockchain:
+    def _init_(self):
+        self.chain = []
+        self.create_genesis_block()
+
+    def create_genesis_block(self):
+        patient_data = {
+            'Patient ID': 'Genesis Patient',
+            'Age': 0,
+            'Deit': 'None'
+        }
+        genesis_block = {
+            'index': 0,
+            'previous_hash': '0',
+            'data': patient_data,
+            'hash': self.calculate_hash(0, '0', patient_data)
+        }
+        self.chain.append(genesis_block)
+    def add_block(self, data):
+        previous_block = self.chain[-1]
+        new_block = {
+            'index': previous_block['index'] + 1,
+            'previous_hash': previous_block['hash'],
+            'data': data,
+            'hash': self.calculate_hash(previous_block['index'] + 1, previous_block['hash'], data)
+        }
+        self.chain.append(new_block)
+
+    def calculate_hash(self, index, previous_hash, data):
+        value = str(index) + previous_hash + str(data)
+        return hashlib.sha256(value.encode()).hexdigest()
+
+    def get_block_by_hash(self, target_hash):
+        for block in self.chain:
+            if block['hash'] == target_hash:
+                return block
+    def store_blockchain_data(self):
+        for block in self.chain:
+            data = (block['data']['Patient ID'], block['data']['Age'],block['data']['Deit'], block['hash'])
+            try:
+                c.execute("INSERT INTO patients (ID, age, deit, hash_key) VALUES (?, ?, ?, ?)", data)
+                conn.commit()
+            except sqlite3.Error as e:
+                print(f"Error: {e}")
+                conn.rollback()
+    def print_all_data(self):
+        i=1
+        for block in self.chain[1:]:
+            target_hash = blockchain.chain[i]['hash']
+            block1 = blockchain.get_block_by_hash(target_hash)
+            print(target_hash)
+            if block1:
+                print("Patient Details:")
+                print(f"Patients ID: {block1['data']['Patient ID']}")
+                print(f"Age: {block1['data']['Age']}")
+                print(f"Condition: {block1['data']['Deit']}")
+                i+=1
+            else:
+                print("no")
+    def close_connection(self):
+        conn.close()
+def read_patient_details_from_csv(filename):
+    with open(filename,mode = 'r') as file:
+        reader=csv.DictReader(file)
+        return list(reader)
+blockchain = Blockchain()
+csv_file = 'C:\\demo\\rrr.csv'
+patient_data_list=read_patient_details_from_csv(csv_file)
+for patient_data in patient_data_list:
+    blockchain.add_block(patient_data)
+blockchain.store_blockchain_data()
+blockchain.print_all_data()
+blockchain.close_connection()
